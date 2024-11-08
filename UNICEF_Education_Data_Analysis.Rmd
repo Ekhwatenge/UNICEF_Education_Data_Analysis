@@ -1,0 +1,217 @@
+---
+title: "UNICEF_Education_Data"
+author: "Elvira Khwatenge"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## About the dataset 
+
+It contains 31 columns, including variables such as:
+
+REF_AREA, Geographic area: Country codes and names.
+INDICATOR, Indicator: Codes and descriptions for specific education-related indicators.
+SEX, Sex: Gender data for the observations.
+EDUCATION_LEVEL, Education Level: The level of education.
+WEALTH_QUINTILE, Wealth Quintile: Income categorization, such as total or specific wealth levels.
+RESIDENCE, Residence: Urban or rural classification.
+TIME_PERIOD: The year of the observation.
+OBS_VALUE: The value of the educational indicator.
+Many columns have missing values, especially fields like OBS_STATUS, OBS_CONF, and FREQ_COLL.
+
+## Research Questions
+
+1. What are the completion rates across different educational levels for males and females in various countries?
+2. How do education completion rates vary by wealth quintile within each country?
+3. Are there significant differences in education outcomes between urban and rural areas?
+4. How have educational indicators evolved over time across different countries or regions?
+
+## Target Audience for the Report
+
+1. To inform policy decisions regarding education funding, gender equity, and rural-urban disparities.
+2. Non-Governmental Organizations (NGOs) and Educational NGOs to  target areas with educational disparities.
+3. For Research Institutions to understand patterns in education access and completion globally.
+4. Government Agencies and International Organizations like UNICEF or UNESCO, focusing on education improvement.
+
+##```{r, echo=FALSE}
+# Load Libraries
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(knitr)
+library ("janitor")
+```
+
+```{R, echo=FALSE}
+
+# Load the data
+education_data <- read.csv("EDUCATION.csv")
+```
+
+```{r}
+# View initial data structure
+str(education_data)
+colnames(education_data)
+# Clean column names and select relevant columns
+education_data <- janitor::clean_names(education_data)
+education_data <- education_data[ , c("ref_area", "geographic_area", "indicator", "sex", 
+                                      "education_level", "wealth_quintile", "residence", 
+                                      "time_period", "obs_value")]
+# Drop rows with missing obs_value
+education_data <- education_data[!is.na(education_data$obs_value), ]
+
+# Check if data exists after filtering
+if(nrow(education_data) == 0) {
+  stop("No data available after initial filtering.")
+}
+                                
+```
+```{r}
+# Select relevant columns
+education_data_selected <- dplyr::select(education_data, ref_area, geographic_area, indicator, sex, 
+                                         education_level, wealth_quintile, residence, 
+                                         time_period, obs_value)
+
+# View the selected columns
+colnames(education_data_selected)
+```
+
+```{r}
+
+# Remove rows with NA in OBS_VALUE column (base R alternative)
+education_data_selected <- education_data_selected[!is.na(education_data_selected$OBS_VALUE), ]
+
+
+# View data structure
+str(education_data)
+```
+3. Exploratory Data Analysis
+Gender Disparities in Education
+
+```{r}
+library(magrittr)
+# Filter for male and female and check if any rows match
+gender_disparity <- education_data[education_data$sex %in% c("Male", "Female"), ]
+if(nrow(gender_disparity) > 0) {
+  # Aggregate the data by geographic area and sex
+  gender_disparity <- aggregate(obs_value ~ geographic_area + sex, data = gender_disparity, FUN = mean, na.rm = TRUE)
+  colnames(gender_disparity)[3] <- "avg_completion_rate"
+
+  # Plot gender disparities
+  ggplot(gender_disparity, aes(x = geographic_area, y = avg_completion_rate, fill = sex)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    labs(title = "Average Completion Rate by Gender and Country", x = "Country", y = "Completion Rate")
+} else {
+  print("No data available for gender disparity analysis.")
+}
+```
+
+Influence of Wealth on Education
+```{r}
+# Filter out "Total" wealth quintile and check if any rows match
+wealth_disparity <- education_data[education_data$wealth_quintile != "Total", ]
+install.packages("ggplot2")
+library(ggplot2)
+if(nrow(wealth_disparity) > 0) {
+  # Aggregate data by wealth quintile
+  wealth_disparity <- aggregate(obs_value ~ wealth_quintile, data = wealth_disparity, FUN = mean, na.rm = TRUE)
+  colnames(wealth_disparity)[2] <- "avg_completion_rate"
+
+  # Plot completion rates by wealth quintile
+  ggplot(wealth_disparity, aes(x = wealth_quintile, y = avg_completion_rate, fill = wealth_quintile)) +
+    geom_bar(stat = "identity") +
+    labs(title = "Completion Rate by Wealth Quintile", x = "Wealth Quintile", y = "Completion Rate")
+} else {
+  print("No data available for wealth disparity analysis.")
+}
+```
+
+3. Urban vs. Rural Disparities
+```{r}
+# Filter for urban and rural residence and check if any rows match
+residence_disparity <- education_data[education_data$residence %in% c("Urban", "Rural"), ]
+if(nrow(residence_disparity) > 0) {
+  # Aggregate data by geographic area and residence
+  residence_disparity <- aggregate(obs_value ~ geographic_area + residence, data = residence_disparity, FUN = mean, na.rm = TRUE)
+  colnames(residence_disparity)[3] <- "avg_completion_rate"
+
+  # Plot urban vs rural completion rates
+  ggplot(residence_disparity, aes(x = geographic_area, y = avg_completion_rate, fill = residence)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    labs(title = "Completion Rate by Residence Type and Country", x = "Country", y = "Completion Rate")
+} else {
+  print("No data available for urban vs. rural analysis.")
+}
+```
+
+4. Trends Over Time
+
+```{r}
+# Aggregate data by time period and check if any rows match
+if(nrow(education_data) > 0) {
+  time_trends <- aggregate(obs_value ~ time_period, data = education_data, FUN = mean, na.rm = TRUE)
+  colnames(time_trends)[2] <- "avg_completion_rate"
+
+  # Plot trends over time
+  ggplot(time_trends, aes(x = time_period, y = avg_completion_rate)) +
+    geom_line() +
+    geom_point() +
+    labs(title = "Trends in Completion Rate Over Time", x = "Year", y = "Average Completion Rate")
+} else {
+  print("No data available for time trends analysis.")
+}
+
+```
+
+5. Comparison Across Countries
+```{r}
+# Aggregate data by geographic area and check if any rows match
+if(nrow(education_data) > 0) {
+  country_comparison <- aggregate(obs_value ~ geographic_area, data = education_data, FUN = mean, na.rm = TRUE)
+  colnames(country_comparison)[2] <- "avg_completion_rate"
+
+  # Plot completion rates by country
+  ggplot(country_comparison, aes(x = reorder(geographic_area, -avg_completion_rate), y = avg_completion_rate)) +
+    geom_bar(stat = "identity", fill = "blue") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    labs(title = "Average Completion Rate by Country", x = "Country", y = "Completion Rate")
+} else {
+  print("No data available for country comparison analysis.")
+}
+```
+
+
+Option 1: Horizontal Bar Plot
+```{r}
+# Plot completion rates by country using a horizontal bar chart
+ggplot(country_comparison, aes(x = reorder(geographic_area, avg_completion_rate), y = avg_completion_rate)) +
+  geom_bar(stat = "identity", fill = "green") +
+  coord_flip() +  # Flip the axes for a horizontal bar plot
+  labs(title = "Average Completion Rate by Country", x = "Country", y = "Completion Rate") +
+  theme_minimal()
+```
+Option 2: Display Only the Top and Bottom 10 Countries
+```{r}
+# Sort and select the top 10 and bottom 10 countries by average completion rate
+top_countries <- head(country_comparison[order(-country_comparison$avg_completion_rate), ], 10)
+bottom_countries <- head(country_comparison[order(country_comparison$avg_completion_rate), ], 10)
+
+# Combine the top and bottom countries into one data frame
+selected_countries <- rbind(top_countries, bottom_countries)
+
+# Plot only the top and bottom countries with a horizontal bar chart
+ggplot(selected_countries, aes(x = reorder(geographic_area, avg_completion_rate), y = avg_completion_rate)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  coord_flip() +
+  labs(title = "Top and Bottom Countries by Completion Rate", x = "Country", y = "Completion Rate") +
+  theme_minimal()
+```
+
+
+## Findings and Discussion
+There exists significant differences in education completion rates between males and females in many regions, with females often having lower rates in certain countries hence need for gender-focused educational support programs. The Wealth quintiles show a correlation with education completion rates, with students from higher wealth brackets having better educational outcomes. Therefore financial support and scholarship programs for lower-income families could reduce this disparity.The rural areas consistently report lower completion rates than urban counterparts, highlighting a need for improved educational infrastructure and resources in rural regions to bridge this gap.While there has been a general improvement in education completion rates over recent years, some countries and regions show stagnation or decline, indicating areas where interventions might be urgently required.
+
