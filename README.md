@@ -1,6 +1,6 @@
 # UNICEF Education Data Analysis
-
-This project provides an analysis of UNICEF education data, exploring trends and disparities across various countries, gender, wealth quintiles, and urban-rural areas while leveragingR for data cleaning, analysis, and visualization to uncover insights for education policy, NGO interventions, and international organizations on education.
+## Author:Elvira Khwatenge
+In this project report we provide an analysis of UNICEF education data, exploring trends and disparities across various countries, gender, wealth quintiles, and urban-rural areas while leveragingR for data cleaning, analysis, and visualization to uncover insights for education policy, NGO interventions, and international organizations on education.
 
 ## Project Structure
 
